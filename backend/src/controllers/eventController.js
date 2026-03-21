@@ -1,9 +1,7 @@
 const Event = require("../models/Event");
 const Registration = require("../models/Registration");
 
-/* ======================
-   TEACHER CONTROLLERS
-====================== */
+/* TEACHER CONTROLLERS */
 
 // TEACHER: Create event
 exports.createEvent = async (req, res) => {
@@ -48,9 +46,7 @@ exports.getMyEvents = async (req, res) => {
   }
 };
 
-/* ======================
-   ADMIN CONTROLLERS
-====================== */
+/* ADMIN CONTROLLERS */
 
 // ADMIN: View pending events
 exports.getPendingEvents = async (req, res) => {
@@ -151,9 +147,7 @@ exports.rejectEvent = async (req, res) => {
   }
 };
 
-/* ======================
-   STUDENT CONTROLLERS
-====================== */
+/* STUDENT CONTROLLERS */
 
 // STUDENT: View approved events
 exports.getAllEvents = async (req, res) => {
@@ -174,6 +168,8 @@ exports.getAllEvents = async (req, res) => {
 
 // STUDENT: Register for event
 exports.registerForEvent = async (req, res) => {
+   console.log("User role:", req.user.role);
+  console.log("User object:", req.user);
   try {
     const { phone, branch, year, rollNo } = req.body || {};
 
