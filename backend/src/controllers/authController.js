@@ -33,10 +33,18 @@ exports.signup = async (req, res) => {
       collegeId: college._id,
     });
 
-    res.status(201).json({
-      message: "User registered successfully",
-      token: generateToken(user),
-    });
+  res.status(201).json({
+  message: "User registered successfully",
+  token: generateToken(user),
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    collegeId: user.collegeId,
+  },
+});
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -63,10 +71,18 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    res.json({
-      message: "Login successful",
-      token: generateToken(user),
-    });
+   res.json({
+  message: "Login successful",
+  token: generateToken(user),
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    collegeId: user.collegeId,
+  },
+});
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
