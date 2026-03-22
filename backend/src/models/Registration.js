@@ -17,11 +17,27 @@ const registrationSchema = new mongoose.Schema(
       ref: "College",
       required: true,
     },
+
+    phone: {
+      type: String,
+      required: true,
+    },
+    branch: {
+      type: String,
+      required: true,
+    },
+    year: {
+      type: Number,
+      required: true,
+    },
+    rollNo: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-// Prevent duplicate registration
 registrationSchema.index({ student: 1, event: 1 }, { unique: true });
 
 module.exports = mongoose.model("Registration", registrationSchema);
