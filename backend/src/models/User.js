@@ -17,8 +17,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 6,
-      select: false, //  for security
+      select: false,
     },
     role: {
       type: String,
@@ -35,9 +34,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("User", userSchema);

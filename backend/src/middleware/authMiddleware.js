@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 exports.protect = (req, res, next) => {
   let token;
 
-  // Check Authorization header
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
@@ -12,13 +11,12 @@ exports.protect = (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: "Not authorized, token missing" });
+    return res.status(401).json({ message: "Token missing" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user info to request
     req.user = {
       userId: decoded.userId,
       role: decoded.role,
@@ -26,17 +24,15 @@ exports.protect = (req, res, next) => {
     };
 
     next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
   }
 };
 
-exports.restrictTo = (...allowedRoles) => {
+exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (!allowedRoles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "Access denied for this role" });
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
     }
     next();
   };

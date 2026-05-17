@@ -33,20 +33,18 @@ exports.signup = async (req, res) => {
       collegeId: college._id,
     });
 
-  res.status(201).json({
-  message: "User registered successfully",
-  token: generateToken(user),
-  user: {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    collegeId: user.collegeId,
-  },
-});
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(201).json({
+      token: generateToken(user),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        collegeId: user.collegeId,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -56,7 +54,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res.status(400).json({ message: "All fields required" });
     }
 
     const user = await User.findOne({ email }).select("+password");
@@ -71,19 +69,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-   res.json({
-  message: "Login successful",
-  token: generateToken(user),
-  user: {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    collegeId: user.collegeId,
-  },
-});
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({
+      token: generateToken(user),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        collegeId: user.collegeId,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

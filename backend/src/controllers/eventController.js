@@ -1,11 +1,13 @@
 const Event = require("../models/Event");
 const Registration = require("../models/Registration");
 
-/* TEACHER CONTROLLERS */
+/* ===================== TEACHER CONTROLLERS ===================== */
 
-// TEACHER: Create event
+// CREATE EVENT
 exports.createEvent = async (req, res) => {
   try {
+    console.log("REQ.USER:", req.user); // debug
+
     const { title, description, date, capacity } = req.body;
 
     if (!title || !description || !date) {
@@ -15,10 +17,10 @@ exports.createEvent = async (req, res) => {
     const event = await Event.create({
       title,
       description,
-      date,
+      date: new Date(date), // ✅ FIXED
       capacity,
-      createdBy: req.user.userId,
-      collegeId: req.user.collegeId,
+      createdBy: req.user.userId,       // ✅ FIXED
+      collegeId: req.user.collegeId,   // ✅ FIXED
       status: "PENDING",
     });
 
@@ -27,12 +29,12 @@ exports.createEvent = async (req, res) => {
       event,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("CREATE EVENT ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-// TEACHER: View own events
+// GET MY EVENTS (Teacher)
 exports.getMyEvents = async (req, res) => {
   try {
     const events = await Event.find({
@@ -46,9 +48,9 @@ exports.getMyEvents = async (req, res) => {
   }
 };
 
-/* ADMIN CONTROLLERS */
+/* ===================== ADMIN CONTROLLERS ===================== */
 
-// ADMIN: View pending events
+// GET PENDING EVENTS
 exports.getPendingEvents = async (req, res) => {
   try {
     const events = await Event.find({
@@ -65,7 +67,7 @@ exports.getPendingEvents = async (req, res) => {
   }
 };
 
-// ADMIN: View approved events
+// GET APPROVED EVENTS (Admin)
 exports.getApprovedEventsAdmin = async (req, res) => {
   try {
     const events = await Event.find({
@@ -82,7 +84,7 @@ exports.getApprovedEventsAdmin = async (req, res) => {
   }
 };
 
-// ADMIN: View rejected events
+// GET REJECTED EVENTS (Admin)
 exports.getRejectedEventsAdmin = async (req, res) => {
   try {
     const events = await Event.find({
@@ -99,7 +101,7 @@ exports.getRejectedEventsAdmin = async (req, res) => {
   }
 };
 
-// ADMIN: Approve event
+// APPROVE EVENT
 exports.approveEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
@@ -125,7 +127,7 @@ exports.approveEvent = async (req, res) => {
   }
 };
 
-// ADMIN: Reject event
+// REJECT EVENT
 exports.rejectEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
@@ -147,9 +149,9 @@ exports.rejectEvent = async (req, res) => {
   }
 };
 
-/* STUDENT CONTROLLERS */
+/* ===================== STUDENT CONTROLLERS ===================== */
 
-// STUDENT: View approved events
+// GET ALL APPROVED EVENTS
 exports.getAllEvents = async (req, res) => {
   try {
     const events = await Event.find({
@@ -166,18 +168,17 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
-// STUDENT: Register for event
+// REGISTER FOR EVENT
 exports.registerForEvent = async (req, res) => {
-   console.log("User role:", req.user.role);
-  console.log("User object:", req.user);
   try {
-    const { phone, branch, year, rollNo } = req.body || {};
+    const { phone, branch, year, rollNo } = req.body;
 
     if (!phone || !branch || !year || !rollNo) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     const event = await Event.findById(req.params.id);
+
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
@@ -206,7 +207,8 @@ exports.registerForEvent = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: "Already registered" });
     }
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+
+    console.error("REGISTER ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 };
