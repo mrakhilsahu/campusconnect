@@ -7,9 +7,10 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, loading, error } = useSelector((state) => state.auth);
+  const { user, loading, error, token } = useSelector((state) => state.auth);
 
   const [showPassword, setShowPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,56 +27,113 @@ const Signup = () => {
     dispatch(registerUser(formData));
   };
 
-  // ✅ AUTO LOGIN + ROLE REDIRECT
   useEffect(() => {
-    if (user) {
-      if (user.role === "STUDENT") navigate("/student");
-      else if (user.role === "TEACHER") navigate("/teacher");
+    if (user && token) {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      navigate("/student");
     }
-  }, [user, navigate]);
+  }, [user, token, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form className="bg-white p-6 rounded-md w-96" onSubmit={handleSubmit}>
-        <h2 className="text-xl font-semibold mb-4">Signup</h2>
+    <div className="min-h-screen flex bg-gray-50">
 
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+      {/* LEFT IMAGE */}
+      <div className="hidden md:flex w-1/2 items-center justify-center bg-gray-100">
+        <img
+          src="https://illustrations.popsy.co/gray/web-design.svg"
+          alt="signup"
+          className="w-[75%] max-w-md"
+        />
+      </div>
 
-        <input name="name" placeholder="Name" className="w-full mb-3 p-2 border rounded" onChange={handleChange} required />
-        <input type="email" name="email" placeholder="Email" className="w-full mb-3 p-2 border rounded" onChange={handleChange} required />
+      {/* RIGHT FORM */}
+      <div className="w-full md:w-1/2 flex items-center justify-center px-6">
+        <div className="w-full max-w-md">
 
-        <div className="relative mb-3">
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            className="w-full p-2 border rounded"
-            onChange={handleChange}
-            required
-          />
-          <span
-            className="absolute right-3 top-2 cursor-pointer"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
-          </span>
+          <h2 className="text-3xl font-semibold text-gray-800 mb-2">
+            Sign up with email
+          </h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Create your account and start exploring events
+          </p>
+
+          {error && (
+            <p className="text-red-500 text-sm mb-4">{error}</p>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            <input
+              name="name"
+              placeholder="Full name"
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+              />
+              <span
+                className="absolute right-3 top-3 cursor-pointer text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+              </span>
+            </div>
+
+            <input
+              name="collegeCode"
+              placeholder="College Code"
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+
+            <select
+              name="role"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="STUDENT">Student</option>
+              <option value="TEACHER">Teacher</option>
+            </select>
+
+            {/* BUTTON */}
+            <button
+              disabled={loading}
+              className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:opacity-90 transition"
+            >
+              {loading ? "Creating account..." : "Continue"}
+            </button>
+
+            {/* FOOTER */}
+            <p className="text-sm text-gray-600 text-center mt-4">
+              Already have an account?{" "}
+              <Link to="/login" className="text-purple-600 font-medium">
+                Log in
+              </Link>
+            </p>
+
+          </form>
         </div>
-
-        <select name="role" className="w-full mb-3 p-2 border rounded" onChange={handleChange}>
-          <option value="STUDENT">Student</option>
-          <option value="TEACHER">Teacher</option>
-        </select>
-
-        <input name="collegeCode" placeholder="College Code" className="w-full mb-4 p-2 border rounded" onChange={handleChange} required />
-
-        <button disabled={loading} className="w-full bg-black text-white py-2 rounded">
-          {loading ? "Creating account..." : "Signup"}
-        </button>
-
-        <p className="text-sm mt-3 text-center">
-          Already have an account? <Link to="/login" className="underline">Login</Link>
-        </p>
-      </form>
+      </div>
     </div>
   );
 };

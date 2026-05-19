@@ -1,32 +1,31 @@
 import api from "./axios";
 
-/*  STUDENT  */
+/* ================= STUDENT ================= */
 
-// get approved events
+// ✅ ADD THIS (missing)
 export const getApprovedEvents = async () => {
   const res = await api.get("/events");
-  return res.data; // { events }
+  return res.data;
 };
 
-// register for event WITH FORM DATA
 export const registerForEvent = async (eventId, formData) => {
   const res = await api.post(`/events/${eventId}/register`, formData);
   return res.data;
 };
 
-/* TEACHER  */
-
-export const getMyEvents = async () => {
-  const res = await api.get("/events/my");
-  return res.data;
-};
+/* ================= TEACHER ================= */
 
 export const createEvent = async (data) => {
   const res = await api.post("/events", data);
   return res.data;
 };
 
-/*  ADMIN  */
+export const getMyEvents = async () => {
+  const res = await api.get("/events/my-events");
+  return res.data;
+};
+
+/* ================= ADMIN ================= */
 
 export const getPendingEvents = async () => {
   const res = await api.get("/events/pending");

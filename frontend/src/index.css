@@ -3,4 +3,8 @@
 
 body {
   background-color: #f9fafb;
+  .scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
+}
+

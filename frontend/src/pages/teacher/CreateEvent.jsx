@@ -9,16 +9,17 @@ function CreateEvent() {
     title: "",
     description: "",
     date: "",
+    time: "",
     location: "",
+    category: "",
+    capacity: "",
+    mode: "offline",
   });
 
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -37,84 +38,147 @@ function CreateEvent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100 px-4">
-      <div className="w-full max-w-2xl bg-white shadow-2xl rounded-2xl p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Create New Event
-        </h1>
-        <p className="text-gray-500 mb-8">
-          Fill in the details below. Event will require admin approval.
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-2xl bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Create Event
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Add details for your event. It will be reviewed before publishing.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">
-              Event Title
-            </label>
+            <label className="text-sm font-medium text-gray-700">Title</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
-              placeholder="Enter event title"
+              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. AI Workshop"
             />
           </div>
 
+          {/* Category + Mode */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Category</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">Select</option>
+                <option value="tech">Technical</option>
+                <option value="cultural">Cultural</option>
+                <option value="sports">Sports</option>
+                <option value="workshop">Workshop</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Mode</label>
+              <select
+                name="mode"
+                value={formData.mode}
+                onChange={handleChange}
+                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="offline">Offline</option>
+                <option value="online">Online</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">
-              Description
-            </label>
+            <label className="text-sm font-medium text-gray-700">Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               required
-              rows="4"
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none transition resize-none"
-              placeholder="Describe your event..."
+              rows="3"
+              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 resize-none"
+              placeholder="Briefly describe the event"
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* Date + Time */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Date
-              </label>
+              <label className="text-sm font-medium text-gray-700">Date</label>
               <input
                 type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
+                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Location
-              </label>
+              <label className="text-sm font-medium text-gray-700">Time</label>
               <input
-                type="text"
-                name="location"
-                value={formData.location}
+                type="time"
+                name="time"
+                value={formData.time}
                 onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
-                placeholder="Event location"
+                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition duration-300 shadow-lg hover:shadow-xl disabled:opacity-70"
-          >
-            {loading ? "Creating..." : "Create Event"}
-          </button>
+          {/* Location */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">Location / Link</label>
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
+              placeholder="Room / Google Meet link"
+            />
+          </div>
+
+          {/* Capacity */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">Capacity</label>
+            <input
+              type="number"
+              name="capacity"
+              value={formData.capacity}
+              onChange={handleChange}
+              min="1"
+              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500"
+              placeholder="Optional"
+            />
+          </div>
+
+          {/* Submit */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-lg transition"
+            >
+              {loading ? "Creating..." : "Create Event"}
+            </button>
+          </div>
+
         </form>
       </div>
     </div>
