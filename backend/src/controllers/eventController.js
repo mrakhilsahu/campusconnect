@@ -1,36 +1,50 @@
 const Event = require("../models/Event");
 const Registration = require("../models/Registration");
 
-/* ===================== TEACHER CONTROLLERS ===================== */
+/* ===================== TEACHER ===================== */
 
 // CREATE EVENT
 exports.createEvent = async (req, res) => {
   try {
-    console.log("REQ.USER:", req.user); // debug
+    const { title, description, date, time, location, category, capacity, mode } = req.body;
 
-    const { title, description, date, capacity } = req.body;
+    if (!title || !description || !date || !location) {
+      return res.status(400).json({ message: "Title, description, date and location are required" });
+    }
 
-    if (!title || !description || !date) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Date must not be in the past
+    const eventDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (eventDate < today) {
+      return res.status(400).json({ message: "Event date cannot be in the past" });
+    }
+
+    // Capacity must be a positive number if provided
+    if (capacity && (isNaN(capacity) || Number(capacity) < 1)) {
+      return res.status(400).json({ message: "Capacity must be a positive number" });
     }
 
     const event = await Event.create({
-      title,
-      description,
-      date: new Date(date), // ✅ FIXED
-      capacity,
-      createdBy: req.user.userId,       // ✅ FIXED
-      collegeId: req.user.collegeId,   // ✅ FIXED
+      title: title.trim(),
+      description: description.trim(),
+      date: eventDate,
+      time,
+      location: location.trim(),
+      category,
+      capacity: capacity ? Number(capacity) : undefined,
+      mode,
+      createdBy: req.user.userId,
+      collegeId: req.user.collegeId,
       status: "PENDING",
     });
 
     res.status(201).json({
-      message: "Event created successfully (Waiting for admin approval)",
+      message: "Event created successfully. Waiting for admin approval.",
       event,
     });
   } catch (error) {
-    console.error("CREATE EVENT ERROR:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -43,12 +57,11 @@ exports.getMyEvents = async (req, res) => {
 
     res.status(200).json({ events });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ===================== ADMIN CONTROLLERS ===================== */
+/* ===================== ADMIN ===================== */
 
 // GET PENDING EVENTS
 exports.getPendingEvents = async (req, res) => {
@@ -62,12 +75,11 @@ exports.getPendingEvents = async (req, res) => {
 
     res.status(200).json({ events });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// GET APPROVED EVENTS (Admin)
+// GET APPROVED EVENTS (Admin view)
 exports.getApprovedEventsAdmin = async (req, res) => {
   try {
     const events = await Event.find({
@@ -79,12 +91,11 @@ exports.getApprovedEventsAdmin = async (req, res) => {
 
     res.status(200).json({ events });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// GET REJECTED EVENTS (Admin)
+// GET REJECTED EVENTS (Admin view)
 exports.getRejectedEventsAdmin = async (req, res) => {
   try {
     const events = await Event.find({
@@ -96,7 +107,6 @@ exports.getRejectedEventsAdmin = async (req, res) => {
 
     res.status(200).json({ events });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -110,6 +120,7 @@ exports.approveEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    // College isolation check
     if (event.collegeId.toString() !== req.user.collegeId.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -117,12 +128,8 @@ exports.approveEvent = async (req, res) => {
     event.status = "APPROVED";
     await event.save();
 
-    res.status(200).json({
-      message: "Event approved successfully",
-      event,
-    });
+    res.status(200).json({ message: "Event approved", event });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -136,20 +143,21 @@ exports.rejectEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    // College isolation check (was missing before)
+    if (event.collegeId.toString() !== req.user.collegeId.toString()) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     event.status = "REJECTED";
     await event.save();
 
-    res.status(200).json({
-      message: "Event rejected successfully",
-      event,
-    });
+    res.status(200).json({ message: "Event rejected", event });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ===================== STUDENT CONTROLLERS ===================== */
+/* ===================== STUDENT ===================== */
 
 // GET ALL APPROVED EVENTS
 exports.getAllEvents = async (req, res) => {
@@ -163,7 +171,6 @@ exports.getAllEvents = async (req, res) => {
 
     res.status(200).json({ events });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -177,6 +184,17 @@ exports.registerForEvent = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Validate year is between 1 and 6
+    if (isNaN(year) || Number(year) < 1 || Number(year) > 6) {
+      return res.status(400).json({ message: "Year must be between 1 and 6" });
+    }
+
+    // Basic phone validation - must be digits, 7 to 15 chars
+    const phoneRegex = /^\d{7,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: "Enter a valid phone number" });
+    }
+
     const event = await Event.findById(req.params.id);
 
     if (!event) {
@@ -184,9 +202,15 @@ exports.registerForEvent = async (req, res) => {
     }
 
     if (event.status !== "APPROVED") {
-      return res
-        .status(400)
-        .json({ message: "Event not open for registration" });
+      return res.status(400).json({ message: "Event is not open for registration" });
+    }
+
+    // Capacity check — if capacity is set, count current registrations
+    if (event.capacity) {
+      const count = await Registration.countDocuments({ event: event._id });
+      if (count >= event.capacity) {
+        return res.status(400).json({ message: "Event is full. No seats available." });
+      }
     }
 
     const registration = await Registration.create({
@@ -194,21 +218,16 @@ exports.registerForEvent = async (req, res) => {
       event: event._id,
       collegeId: req.user.collegeId,
       phone,
-      branch,
-      year,
-      rollNo,
+      branch: branch.trim(),
+      year: Number(year),
+      rollNo: rollNo.trim(),
     });
 
-    res.status(201).json({
-      message: "Registered successfully",
-      registration,
-    });
+    res.status(201).json({ message: "Registered successfully", registration });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(400).json({ message: "Already registered" });
+      return res.status(400).json({ message: "You are already registered for this event" });
     }
-
-    console.error("REGISTER ERROR:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };

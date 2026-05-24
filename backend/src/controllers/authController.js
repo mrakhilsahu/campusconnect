@@ -8,12 +8,28 @@ exports.signup = async (req, res) => {
   try {
     const { name, email, password, role, collegeCode } = req.body;
 
+    // Basic field check
     if (!name || !email || !password || !collegeCode) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const college = await College.findOne({ code: collegeCode });
+    // Password must be at least 6 characters
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
 
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Block ADMIN role from self-registration
+    if (role === "ADMIN") {
+      return res.status(403).json({ message: "Admin accounts cannot be created via signup" });
+    }
+
+    const college = await College.findOne({ code: collegeCode.toUpperCase() });
     if (!college || !college.isActive) {
       return res.status(400).json({ message: "Invalid college code" });
     }
@@ -26,8 +42,8 @@ exports.signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password: hashedPassword,
       role: role || "STUDENT",
       collegeId: college._id,
@@ -44,7 +60,7 @@ exports.signup = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -54,17 +70,16 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "All fields required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (!user || !user.isActive) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -80,6 +95,6 @@ exports.login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
