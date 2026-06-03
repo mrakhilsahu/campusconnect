@@ -15,6 +15,22 @@ const eventSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    time: {
+      type: String,
+    },
+    location: {
+      type: String,
+    },
+    category: {
+      type: String,
+      enum: ["tech", "cultural", "sports", "workshop", ""],
+      default: "",
+    },
+    mode: {
+      type: String,
+      enum: ["offline", "online", "hybrid"],
+      default: "offline",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -35,9 +51,7 @@ const eventSchema = new mongoose.Schema(
       min: 1,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Event", eventSchema);

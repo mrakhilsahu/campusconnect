@@ -17,7 +17,6 @@ const registrationSchema = new mongoose.Schema(
       ref: "College",
       required: true,
     },
-
     phone: {
       type: String,
       required: true,
@@ -38,6 +37,7 @@ const registrationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// One registration per student per event
 registrationSchema.index({ student: 1, event: 1 }, { unique: true });
 
 module.exports = mongoose.model("Registration", registrationSchema);
