@@ -1,151 +1,121 @@
 import { useEffect, useState } from "react";
-import { getApprovedEvents, registerForEvent } from "../../api/events";
+import { useSelector } from "react-redux";
+import { getApprovedEvents } from "../../api/events";
+import { getMyRegisteredEvents } from "../../api/registrations";
+import { CalendarDays, CheckCircle, Clock, Link } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-function StudentDashboard() {
-  const [events, setEvents] = useState([]);
+export default function StudentDashboard() {
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  const [allEvents, setAllEvents] = useState([]);
+  const [myEvents, setMyEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-
-  const [form, setForm] = useState({
-    phone: "",
-    branch: "",
-    year: "",
-    rollNo: "",
-  });
 
   useEffect(() => {
-    const loadEvents = async () => {
+    const load = async () => {
       try {
-        const data = await getApprovedEvents();
-        setEvents(data.events);
-      } catch (err) {
-        console.error("Failed to load events");
+        const [allData, myData] = await Promise.all([
+          getApprovedEvents(),
+          getMyRegisteredEvents(),
+        ]);
+        setAllEvents(allData.events);
+        setMyEvents(myData.events);
+      } catch {
+        // silently fail — stats just show 0
       } finally {
         setLoading(false);
       }
     };
-    loadEvents();
+    load();
   }, []);
 
-  const openModal = (eventId) => {
-    setSelectedEvent(eventId);
-    setShowModal(true);
-  };
+  // Upcoming = registered events with date in the future
+  const upcoming = myEvents.filter((e) => new Date(e.date) >= new Date());
+  const past = myEvents.filter((e) => new Date(e.date) < new Date());
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedEvent(null);
-    setForm({ phone: "", branch: "", year: "", rollNo: "" });
-  };
+  const stats = [
+    { label: "Available Events", value: allEvents.length, icon: <CalendarDays size={20} />, color: "bg-blue-50 text-blue-600" },
+    { label: "Registered", value: myEvents.length, icon: <CheckCircle size={20} />, color: "bg-green-50 text-green-600" },
+    { label: "Upcoming", value: upcoming.length, icon: <Clock size={20} />, color: "bg-yellow-50 text-yellow-600" },
+  ];
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await registerForEvent(selectedEvent, form);
-      alert("Registered successfully");
-      closeModal();
-    } catch (err) {
-      alert(err.response?.data?.message || "Registration failed");
-    }
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-sm text-gray-400 animate-pulse">Loading dashboard...</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <h2 className="text-2xl font-semibold mb-6">Approved Events</h2>
+    <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="max-w-5xl mx-auto">
 
-      {loading && <p>Loading...</p>}
+        {/* Greeting */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Welcome back, {user?.name?.split(" ")[0]} 👋
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Here's what's happening on your campus.</p>
+        </div>
 
-      {!loading && events.length === 0 && (
-        <p className="text-gray-500">No events available.</p>
-      )}
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
-      <div className="space-y-4">
-        {events.map((event) => (
-          <div key={event._id} className="border p-4 rounded-md">
-            <h3 className="font-medium">{event.title}</h3>
-            <p className="text-sm text-gray-600">{event.description}</p>
-            <p className="text-sm mt-2">
-              Date: {new Date(event.date).toLocaleDateString()}
-            </p>
-
+        {/* Upcoming registered events */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-800">Upcoming Events</h2>
             <button
-              onClick={() => openModal(event._id)}
-              className="mt-3 text-sm border px-3 py-1 rounded hover:bg-black hover:text-white"
+              onClick={() => navigate("/student/my-events")}
+              className="text-sm text-indigo-600 hover:underline"
             >
-              Register
+              View all →
             </button>
           </div>
-        ))}
-      </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Event Registration
-            </h3>
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input
-                name="phone"
-                placeholder="Phone"
-                value={form.phone}
-                onChange={handleChange}
-                required
-                className="w-full border p-2 rounded"
-              />
-              <input
-                name="branch"
-                placeholder="Branch"
-                value={form.branch}
-                onChange={handleChange}
-                required
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="number"
-                name="year"
-                placeholder="Year"
-                value={form.year}
-                onChange={handleChange}
-                required
-                className="w-full border p-2 rounded"
-              />
-              <input
-                name="rollNo"
-                placeholder="Roll Number"
-                value={form.rollNo}
-                onChange={handleChange}
-                required
-                className="w-full border p-2 rounded"
-              />
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="border px-4 py-1 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-black text-white px-4 py-1 rounded"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
-          </div>
+          {upcoming.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400 text-sm">No upcoming events.</p>
+              <button
+                onClick={() => navigate("/events")}
+                className="mt-3 text-sm text-indigo-600 hover:underline"
+              >
+                Browse events to register →
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcoming.slice(0, 4).map((event) => (
+                <div key={event._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{event.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
+                    Registered
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
-
-export default StudentDashboard;

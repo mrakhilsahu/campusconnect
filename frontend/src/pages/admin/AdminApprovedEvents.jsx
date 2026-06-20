@@ -1,29 +1,40 @@
 import { useEffect, useState } from "react";
 import { getApprovedEventsAdmin } from "../../api/events";
 
-function AdminApprovedEvents() {
+export default function AdminApprovedEvents() {
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    getApprovedEventsAdmin().then(res => {
-      setEvents(res.events);
-    });
+    const fetch = async () => {
+      try {
+        const data = await getApprovedEventsAdmin();
+        setEvents(data.events);
+      } catch {
+        setError("Failed to load approved events.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
   }, []);
 
+  if (loading) return <p className="text-sm text-gray-500 animate-pulse">Loading...</p>;
+  if (error) return <p className="text-sm text-red-500">{error}</p>;
+  if (events.length === 0) return <p className="text-sm text-gray-500">No approved events.</p>;
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Approved Events</h1>
-
-      {events.length === 0 && <p>No approved events</p>}
-
-      {events.map(event => (
-        <div key={event._id} className="border p-4 rounded mb-3">
-          <h3 className="font-semibold">{event.title}</h3>
-          <p className="text-sm text-gray-600">{event.description}</p>
+    <div className="space-y-3">
+      {events.map((event) => (
+        <div key={event._id} className="bg-white border border-gray-200 rounded-xl p-5">
+          <p className="font-semibold text-gray-800">{event.title}</p>
+          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>
+          <p className="text-xs text-gray-400 mt-2">
+            By {event.createdBy?.name} &bull; {new Date(event.date).toLocaleDateString()}
+          </p>
         </div>
       ))}
     </div>
   );
 }
-
-export default AdminApprovedEvents;

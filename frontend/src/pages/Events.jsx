@@ -1,136 +1,123 @@
 import { useEffect, useState } from "react";
 import { getApprovedEvents } from "../api/events";
 import { useSelector } from "react-redux";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Search } from "lucide-react";
+import RegisterEventModal from "../components/RegisterEventModal";
 
-function Events() {
+export default function Events() {
   const { user } = useSelector((state) => state.auth);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const loadEvents = async () => {
       try {
         const data = await getApprovedEvents();
         setEvents(data.events);
-      } catch (err) {
-        console.error("Failed to load events");
+      } catch {
+        setError("Failed to load events. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
     loadEvents();
   }, []);
 
-  const getEventImage = (event) => {
-    if (event.image) return event.image;
+  const filteredEvents = events.filter(
+    (e) =>
+      e.title.toLowerCase().includes(search.toLowerCase()) ||
+      e.description.toLowerCase().includes(search.toLowerCase())
+  );
 
-    // Dynamic unique image based on title
-    return `https://source.unsplash.com/600x400/?${event.title},event`;
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <p className="text-sm text-gray-400 animate-pulse">Loading events...</p>
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500 text-lg animate-pulse">
-          Loading events...
-        </p>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <p className="text-sm text-red-500">{error}</p>
+    </div>
+  );
 
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        
-        {/* Header */}
-        <div className="mb-14 text-center">
-          <h2 className="text-4xl font-bold text-slate-900 tracking-tight">
-            Discover Events
-          </h2>
-          <p className="text-slate-500 mt-3">
-            Explore curated campus experiences ✨
-          </p>
+    <div className="min-h-screen bg-gray-50 px-4 py-10">
+      <div className="max-w-6xl mx-auto">
+
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-800">Campus Events</h2>
+          <p className="text-gray-500 mt-2 text-sm">Browse and register for events happening on your campus</p>
         </div>
 
-        {events.length === 0 && (
-          <div className="bg-white p-10 rounded-2xl shadow text-center">
-            <p className="text-slate-500 text-lg">
-              No events available right now.
-            </p>
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 max-w-md mx-auto mb-10 shadow-sm">
+          <Search size={16} className="text-gray-400 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search by title or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 outline-none text-sm text-gray-700 bg-transparent"
+          />
+        </div>
+
+        {filteredEvents.length === 0 && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+            <p className="text-gray-400">No events found{search ? ` for "${search}"` : ""}.</p>
           </div>
         )}
 
-        {/* GRID */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-          {events.map((event) => (
-            <div
-              key={event._id}
-              className="group w-full max-w-sm bg-white/70 backdrop-blur-xl border border-white/40 rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition duration-500 hover:-translate-y-2"
-            >
-              {/* IMAGE */}
-              <div className="relative h-44 overflow-hidden">
-                <img
-                  src={getEventImage(event)}
-                  alt={event.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                />
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
-                {/* Badge */}
-                <div className="absolute top-3 left-3 bg-white/90 text-xs px-3 py-1 rounded-full font-medium shadow">
-                  Event
-                </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredEvents.map((event) => (
+            <div key={event._id} className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                {event.category && (
+                  <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium capitalize">
+                    {event.category}
+                  </span>
+                )}
+                <h3 className="font-semibold text-gray-800 mt-3 mb-1">{event.title}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2">{event.description}</p>
               </div>
 
-              {/* CONTENT */}
-              <div className="p-5 flex flex-col justify-between h-[200px]">
-                <div>
-                  {/* DATE */}
-                  <div className="flex items-center gap-2 text-xs text-blue-700 mb-2">
-                    <CalendarDays size={14} />
-                    <span>
-                      {new Date(event.date).toDateString()}
-                    </span>
+              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <CalendarDays size={12} />
+                    <span>{new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                   </div>
-
-                  {/* TITLE */}
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1 line-clamp-1">
-                    {event.title}
-                  </h3>
-
-                  {/* DESC */}
-                  <p className="text-sm text-slate-600 line-clamp-2">
-                    {event.description}
-                  </p>
-                </div>
-
-                {/* FOOTER */}
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <MapPin size={14} />
-                    <span>{event.location || "Campus"}</span>
-                  </div>
-
-                  {user?.role === "STUDENT" && (
-                    <button className="relative px-4 py-1.5 text-sm rounded-lg bg-gradient-to-r from-blue-900 to-indigo-600 text-white overflow-hidden">
-                      <span className="relative z-10">Register</span>
-
-                      {/* Glow Effect */}
-                      <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition bg-white/20 blur-md"></span>
-                    </button>
+                  {event.location && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                      <MapPin size={12} />
+                      <span className="line-clamp-1">{event.location}</span>
+                    </div>
                   )}
                 </div>
+
+                {user?.role === "STUDENT" && (
+                  <button
+                    onClick={() => setSelectedEventId(event._id)}
+                    className="shrink-0 ml-3 px-4 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
+                  >
+                    Register
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {selectedEventId && (
+        <RegisterEventModal
+          eventId={selectedEventId}
+          onClose={() => setSelectedEventId(null)}
+        />
+      )}
     </div>
   );
 }
-
-export default Events;

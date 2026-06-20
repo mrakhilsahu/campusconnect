@@ -4,11 +4,8 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        
-        {/* Header */}
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
-          Admin Dashboard
-        </h1>
+
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">Admin Dashboard</h1>
 
         {/* Tabs */}
         <div className="flex gap-6 border-b mb-8">
