@@ -9,7 +9,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/events", require("./routes/eventRoutes"));
 app.use("/api/registrations", require("./routes/registrationRoutes"));
-app.use("/api/attendance", require("./routes/attendanceRoutes"));
+app.use("/api/attendance", require("./routes/temp"));
 
 app.get("/", (req, res) => res.send("CampusConnect API running"));
 
