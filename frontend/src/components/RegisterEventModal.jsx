@@ -18,6 +18,7 @@ function RegisterEventModal({ eventId, onClose }) {
     await registerForEvent(eventId, form);
     onClose(true);
   };
+  
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
@@ -78,6 +79,12 @@ function RegisterEventModal({ eventId, onClose }) {
       </div>
     </div>
   );
+  
+}
+try {
+  await registerForEvent(eventId, formData);
+} catch (err) {
+  console.log(err.response?.data);
 }
 
 export default RegisterEventModal;

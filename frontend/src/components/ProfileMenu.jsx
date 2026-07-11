@@ -11,8 +11,7 @@ function ProfileMenu() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
-  if (!user) return null;
-
+ 
   const letter =
     user.name?.charAt(0).toUpperCase() ||
     user.email?.charAt(0).toUpperCase() ||
@@ -39,6 +38,10 @@ function ProfileMenu() {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  
+   if (!user) return null;
+
 
   return (
     <div className="relative" ref={menuRef}>

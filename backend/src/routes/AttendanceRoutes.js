@@ -9,7 +9,7 @@ const {
 
 const { protect, restrictTo } = require("../middleware/authMiddleware");
 
-// Teacher: view registered students + their attendance status
+// Teacher: view registered students + attendance status
 router.get(
   "/:eventId/students",
   protect,
@@ -17,7 +17,7 @@ router.get(
   getRegisteredStudents
 );
 
-// Teacher: mark one student's attendance
+// Teacher: mark attendance
 router.patch(
   "/:eventId/students/:studentId",
   protect,
@@ -25,7 +25,7 @@ router.patch(
   markAttendance
 );
 
-// Student: check my own attendance for an event
+// Student: check own attendance
 router.get(
   "/:eventId/my",
   protect,

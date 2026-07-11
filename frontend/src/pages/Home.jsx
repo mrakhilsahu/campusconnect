@@ -15,13 +15,20 @@ function Home() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
-  const handleGetStarted = () => {
-    if (!user) {
-      navigate("/signup");
-    } else {
-      navigate(`/${user.role.toLowerCase()}`);
-    }
-  };
+ const handleGetStarted = () => {
+  if (!user) {
+    navigate("/signup");
+    return;
+  }
+
+  if (user.role === "STUDENT") {
+    navigate("/student");
+  } else if (user.role === "TEACHER") {
+    navigate("/teacher");
+  } else if (user.role === "ADMIN") {
+    navigate("/admin/pending");
+  }
+};
 
   const handleLogin = () => {
     navigate("/login");
@@ -354,7 +361,7 @@ function Home() {
   </motion.div>
 
   {/* 🎬 ANIMATION */}
-  <style jsx>{`
+  <style >{`
     @keyframes gradient-x {
       0%, 100% { background-position: left center; }
       50% { background-position: right center; }
@@ -409,7 +416,7 @@ function Home() {
       </footer>
 
       {/* 🔥 SCROLL ANIMATION */}
-      <style jsx>{`
+      <style>{`
         @keyframes scroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }

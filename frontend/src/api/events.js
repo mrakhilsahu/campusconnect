@@ -21,7 +21,7 @@ export const createEvent = async (data) => {
 };
 
 export const getMyEvents = async () => {
-  const res = await api.get("/events/my-events");
+  const res = await api.get("/events/my");
   return res.data;
 };
 

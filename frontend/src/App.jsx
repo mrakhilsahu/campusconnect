@@ -5,6 +5,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Events from "./pages/Events";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import AttendancePage from "./pages/teacher/AttendancePage";
 
 // ADMIN
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -64,12 +66,19 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/create" element={<CreateEvent />} />
+          <Route path="/teacher/attendance/:eventId" element={<AttendancePage />} />
         </Route>
 
-        {/*  STUDENT  */}
+
+        {/* STUDENT */}
         <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+          <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/my-events" element={<MyEvents />} />
         </Route>
+       
+
+        {/* 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

@@ -26,8 +26,8 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(user));
 
       if (user.role === "STUDENT") navigate("/student");
-      else if (user.role === "TEACHER") navigate("/teacher");
-      else if (user.role === "ADMIN") navigate("/admin");
+else if (user.role === "TEACHER") navigate("/teacher");
+else if (user.role === "ADMIN") navigate("/admin/pending");
     }
   }, [user, token, navigate]);
 

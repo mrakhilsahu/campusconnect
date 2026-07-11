@@ -28,12 +28,15 @@ const Signup = () => {
   };
 
   useEffect(() => {
-    if (user && token) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      navigate("/student");
-    }
-  }, [user, token, navigate]);
+  if (user && token) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    if (user.role === "STUDENT") navigate("/student");
+    else if (user.role === "TEACHER") navigate("/teacher");
+    else if (user.role === "ADMIN") navigate("/admin/pending");
+  }
+}, [user, token, navigate]);
 
   return (
     <div className="min-h-screen flex bg-gray-50">
