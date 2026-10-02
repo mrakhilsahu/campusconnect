@@ -6,10 +6,12 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxlength: 120,
     },
     description: {
       type: String,
       required: true,
+      maxlength: 3000,
     },
     date: {
       type: Date,
@@ -17,9 +19,13 @@ const eventSchema = new mongoose.Schema(
     },
     time: {
       type: String,
+      maxlength: 50,
+      trim: true,
     },
     location: {
       type: String,
+      maxlength: 180,
+      trim: true,
     },
     category: {
       type: String,
@@ -50,8 +56,16 @@ const eventSchema = new mongoose.Schema(
       type: Number,
       min: 1,
     },
+    registeredCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true }
 );
+
+eventSchema.index({ collegeId: 1, status: 1, date: 1 });
+eventSchema.index({ createdBy: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Event", eventSchema);

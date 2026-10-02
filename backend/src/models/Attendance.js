@@ -32,5 +32,6 @@ const attendanceSchema = new mongoose.Schema(
 
 // One attendance record per student per event
 attendanceSchema.index({ event: 1, student: 1 }, { unique: true });
+attendanceSchema.index({ student: 1, event: 1 });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);

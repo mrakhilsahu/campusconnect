@@ -20,10 +20,14 @@ const registrationSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 15,
     },
     branch: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 100,
     },
     year: {
       type: Number,
@@ -32,6 +36,8 @@ const registrationSchema = new mongoose.Schema(
     rollNo: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 50,
     },
   },
   { timestamps: true }
@@ -39,5 +45,6 @@ const registrationSchema = new mongoose.Schema(
 
 // One registration per student per event
 registrationSchema.index({ student: 1, event: 1 }, { unique: true });
+registrationSchema.index({ event: 1 });
 
 module.exports = mongoose.model("Registration", registrationSchema);

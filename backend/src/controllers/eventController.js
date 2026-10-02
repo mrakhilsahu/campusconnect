@@ -1,233 +1,154 @@
 const Event = require("../models/Event");
 const Registration = require("../models/Registration");
+const AppError = require("../utils/AppError");
+const { requireText, optionalText } = require("../utils/validation");
 
-/* ===================== TEACHER ===================== */
+const ALLOWED_CATEGORIES = ["tech", "cultural", "sports", "workshop", ""];
+const ALLOWED_MODES = ["offline", "online", "hybrid"];
 
-// CREATE EVENT
+const parseEventDate = (value) => {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) throw new AppError("Enter a valid event date", 400);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date < today) throw new AppError("Event date cannot be in the past", 400);
+  return date;
+};
+
 exports.createEvent = async (req, res) => {
-  try {
-    const { title, description, date, time, location, category, capacity, mode } = req.body;
+  const title = requireText(req.body.title, "Title", 120);
+  const description = requireText(req.body.description, "Description", 3000);
+  const location = optionalText(req.body.location, "Location", 180);
+  const time = optionalText(req.body.time, "Time", 50);
+  const date = parseEventDate(req.body.date);
+  const category = req.body.category || "";
+  const mode = req.body.mode || "offline";
 
-    if (!title || !description || !date || !location) {
-      return res.status(400).json({ message: "Title, description, date and location are required" });
+  if (!ALLOWED_CATEGORIES.includes(category)) throw new AppError("Invalid category", 400);
+  if (!ALLOWED_MODES.includes(mode)) throw new AppError("Invalid event mode", 400);
+
+  let capacity;
+  if (req.body.capacity !== undefined && req.body.capacity !== "") {
+    capacity = Number(req.body.capacity);
+    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 100000) {
+      throw new AppError("Capacity must be a whole number between 1 and 100000", 400);
     }
-
-    // Date must not be in the past
-    const eventDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (eventDate < today) {
-      return res.status(400).json({ message: "Event date cannot be in the past" });
-    }
-
-    // Capacity must be a positive number if provided
-    if (capacity && (isNaN(capacity) || Number(capacity) < 1)) {
-      return res.status(400).json({ message: "Capacity must be a positive number" });
-    }
-
-    const event = await Event.create({
-      title: title.trim(),
-      description: description.trim(),
-      date: eventDate,
-      time,
-      location: location.trim(),
-      category,
-      capacity: capacity ? Number(capacity) : undefined,
-      mode,
-      createdBy: req.user.userId,
-      collegeId: req.user.collegeId,
-      status: "PENDING",
-    });
-
-    res.status(201).json({
-      message: "Event created successfully. Waiting for admin approval.",
-      event,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
   }
+
+  const event = await Event.create({
+    title, description, date, time, location, category, capacity, mode,
+    createdBy: req.user.userId, collegeId: req.user.collegeId, status: "PENDING",
+  });
+
+  res.status(201).json({ message: "Event created successfully. Waiting for admin approval.", event });
 };
 
-// GET MY EVENTS (Teacher)
 exports.getMyEvents = async (req, res) => {
-  try {
-    const events = await Event.find({
-      createdBy: req.user.userId,
-    }).sort({ createdAt: -1 });
-
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
+  const events = await Event.find({ createdBy: req.user.userId }).sort({ createdAt: -1 });
+  res.json({ events });
 };
 
-/* ===================== ADMIN ===================== */
-
-// GET PENDING EVENTS
-exports.getPendingEvents = async (req, res) => {
-  try {
-    const events = await Event.find({
-      status: "PENDING",
-      collegeId: req.user.collegeId,
-    })
-      .populate("createdBy", "name email")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
+const getAdminEvents = (status) => async (req, res) => {
+  const events = await Event.find({ status, collegeId: req.user.collegeId })
+    .populate("createdBy", "name email")
+    .sort({ createdAt: -1 });
+  res.json({ events });
 };
 
-// GET APPROVED EVENTS (Admin view)
-exports.getApprovedEventsAdmin = async (req, res) => {
-  try {
-    const events = await Event.find({
-      status: "APPROVED",
-      collegeId: req.user.collegeId,
-    })
-      .populate("createdBy", "name email")
-      .sort({ createdAt: -1 });
+exports.getPendingEvents = getAdminEvents("PENDING");
+exports.getApprovedEventsAdmin = getAdminEvents("APPROVED");
+exports.getRejectedEventsAdmin = getAdminEvents("REJECTED");
 
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
+const updateEventStatus = async (req, res, status) => {
+  const event = await Event.findOne({ _id: req.params.id, collegeId: req.user.collegeId });
+  if (!event) throw new AppError("Event not found", 404);
+  if (event.status !== "PENDING") throw new AppError(`Event is already ${event.status.toLowerCase()}`, 409);
+
+  event.status = status;
+  await event.save();
+  res.json({ message: `Event ${status.toLowerCase()}`, event });
 };
 
-// GET REJECTED EVENTS (Admin view)
-exports.getRejectedEventsAdmin = async (req, res) => {
-  try {
-    const events = await Event.find({
-      status: "REJECTED",
-      collegeId: req.user.collegeId,
-    })
-      .populate("createdBy", "name email")
-      .sort({ createdAt: -1 });
+exports.approveEvent = (req, res) => updateEventStatus(req, res, "APPROVED");
+exports.rejectEvent = (req, res) => updateEventStatus(req, res, "REJECTED");
 
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// APPROVE EVENT
-exports.approveEvent = async (req, res) => {
-  try {
-    const event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    // College isolation check
-    if (event.collegeId.toString() !== req.user.collegeId.toString()) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    event.status = "APPROVED";
-    await event.save();
-
-    res.status(200).json({ message: "Event approved", event });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// REJECT EVENT
-exports.rejectEvent = async (req, res) => {
-  try {
-    const event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    // College isolation check (was missing before)
-    if (event.collegeId.toString() !== req.user.collegeId.toString()) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    event.status = "REJECTED";
-    await event.save();
-
-    res.status(200).json({ message: "Event rejected", event });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/* ===================== STUDENT ===================== */
-
-// GET ALL APPROVED EVENTS
 exports.getAllEvents = async (req, res) => {
-  try {
-    const events = await Event.find({
-      status: "APPROVED",
-      collegeId: req.user.collegeId,
-    })
-      .populate("createdBy", "name email")
-      .sort({ date: 1 });
+  const { search = "", category = "", mode = "" } = req.query;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const filter = { status: "APPROVED", collegeId: req.user.collegeId, date: { $gte: today } };
 
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+  if (category) {
+    if (!ALLOWED_CATEGORIES.includes(category)) throw new AppError("Invalid category filter", 400);
+    filter.category = category;
   }
+  if (mode) {
+    if (!ALLOWED_MODES.includes(mode)) throw new AppError("Invalid mode filter", 400);
+    filter.mode = mode;
+  }
+
+  if (String(search).trim()) {
+    const safeSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.$or = [
+      { title: { $regex: safeSearch, $options: "i" } },
+      { description: { $regex: safeSearch, $options: "i" } },
+      { location: { $regex: safeSearch, $options: "i" } },
+    ];
+  }
+
+  const events = await Event.find(filter).populate("createdBy", "name email").sort({ date: 1, time: 1 });
+  res.json({ events });
 };
 
-// REGISTER FOR EVENT
 exports.registerForEvent = async (req, res) => {
+  const phone = String(req.body.phone || "").trim();
+  const branch = requireText(req.body.branch, "Branch / department", 100);
+  const rollNo = requireText(req.body.rollNo, "Roll number", 50);
+  const numericYear = Number(req.body.year);
+
+  if (!/^\d{7,15}$/.test(phone)) throw new AppError("Enter a valid phone number", 400);
+  if (!Number.isInteger(numericYear) || numericYear < 1 || numericYear > 6) {
+    throw new AppError("Year must be between 1 and 6", 400);
+  }
+
+  const event = await Event.findOne({ _id: req.params.id, collegeId: req.user.collegeId, status: "APPROVED" });
+  if (!event) throw new AppError("Event not found or registration is closed", 404);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (new Date(event.date) < today) throw new AppError("Registration is closed for this event", 400);
+
+  if (event.registeredCount == null) {
+    event.registeredCount = await Registration.countDocuments({ event: event._id });
+    await event.save();
+  }
+
+  let reserved = false;
+  if (event.capacity) {
+    // Reserve the seat and increment the counter in one database operation.
+    // This prevents two concurrent requests from taking the same last seat.
+    const updated = await Event.findOneAndUpdate(
+      { _id: event._id, status: "APPROVED", $expr: { $lt: ["$registeredCount", "$capacity"] } },
+      { $inc: { registeredCount: 1 } },
+      { new: true }
+    );
+    if (!updated) throw new AppError("Event is full. No seats available.", 409);
+    reserved = true;
+  } else {
+    await Event.updateOne({ _id: event._id }, { $inc: { registeredCount: 1 } });
+    reserved = true;
+  }
+
   try {
-    const { phone, branch, year, rollNo } = req.body;
-
-    if (!phone || !branch || !year || !rollNo) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Validate year is between 1 and 6
-    if (isNaN(year) || Number(year) < 1 || Number(year) > 6) {
-      return res.status(400).json({ message: "Year must be between 1 and 6" });
-    }
-
-    // Basic phone validation - must be digits, 7 to 15 chars
-    const phoneRegex = /^\d{7,15}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: "Enter a valid phone number" });
-    }
-
-    const event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    if (event.status !== "APPROVED") {
-      return res.status(400).json({ message: "Event is not open for registration" });
-    }
-
-    // Capacity check — if capacity is set, count current registrations
-    if (event.capacity) {
-      const count = await Registration.countDocuments({ event: event._id });
-      if (count >= event.capacity) {
-        return res.status(400).json({ message: "Event is full. No seats available." });
-      }
-    }
-
     const registration = await Registration.create({
-      student: req.user.userId,
-      event: event._id,
-      collegeId: req.user.collegeId,
-      phone,
-      branch: branch.trim(),
-      year: Number(year),
-      rollNo: rollNo.trim(),
+      student: req.user.userId, event: event._id, collegeId: req.user.collegeId,
+      phone, branch, year: numericYear, rollNo,
     });
-
     res.status(201).json({ message: "Registered successfully", registration });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({ message: "You are already registered for this event" });
+    if (reserved) {
+      await Event.updateOne({ _id: event._id, registeredCount: { $gt: 0 } }, { $inc: { registeredCount: -1 } });
     }
-    res.status(500).json({ message: "Server error" });
+    throw error;
   }
 };
