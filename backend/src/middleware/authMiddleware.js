@@ -1,36 +1,50 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const AppError = require("../utils/AppError");
 
-exports.protect = (req, res, next) => {
+exports.protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Token missing" });
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new AppError("Authentication required", 401);
   }
-
-  const token = authHeader.split(" ")[1];
 
   if (!process.env.JWT_SECRET) {
-    return res.status(500).json({ message: "Server misconfigured: JWT_SECRET missing" });
+    throw new AppError(
+      "Server authentication is not configured",
+      500
+    );
   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = {
-      userId: decoded.userId,
-      role: decoded.role,
-      collegeId: decoded.collegeId,
-    };
-    next();
-  } catch {
-    return res.status(401).json({ message: "Invalid or expired token" });
+  const token = authHeader.slice(7).trim();
+
+  if (!token) {
+    throw new AppError("Authentication required", 401);
   }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+  const user = await User.findById(decoded.userId).select(
+    "role collegeId isActive"
+  );
+
+  if (!user || !user.isActive) {
+    throw new AppError("Invalid or expired token", 401);
+  }
+
+  req.user = {
+    userId: user._id.toString(),
+    role: user.role,
+    collegeId: user.collegeId.toString(),
+  };
+
+  next();
 };
 
-exports.restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-    next();
-  };
+exports.restrictTo = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    throw new AppError("Access denied", 403);
+  }
+
+  next();
 };
