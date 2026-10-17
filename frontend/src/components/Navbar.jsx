@@ -1,200 +1,65 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { CalendarDays, Menu, X } from "lucide-react";
 import ProfileMenu from "./ProfileMenu";
 
-function Navbar() {
+const linksForRole = (role) => {
+  if (role === "STUDENT") return [{ label: "Dashboard", to: "/student" }, { label: "Events", to: "/events" }, { label: "My Events", to: "/student/my-events" }];
+  if (role === "TEACHER") return [{ label: "Dashboard", to: "/teacher" }, { label: "Events", to: "/events" }, { label: "Create Event", to: "/teacher/create" }];
+  if (role === "ADMIN") return [{ label: "Pending", to: "/admin/pending" }, { label: "Approved", to: "/admin/approved" }, { label: "Rejected", to: "/admin/rejected" }];
+  return [{ label: "Events", to: "/events" }];
+};
+
+export default function Navbar() {
   const { user } = useSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
+  const links = linksForRole(user?.role);
 
   return (
-    <nav className="w-full sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        
-        <Link
-          to="/"
-          className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
-        >
-          CampusConnect
+    <nav className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm"><CalendarDays size={19} /></span>
+          <span className="text-lg font-bold tracking-tight text-slate-950">Campus<span className="text-blue-600">Connect</span></span>
         </Link>
 
-        <button
-          className="md:hidden text-gray-700"
-          onClick={() => setOpen(!open)}
-        >
-          {open ? <X size={26} /> : <Menu size={26} />}
-        </button>
-
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          
-          <Link
-            to="/events"
-            className="text-gray-700 hover:text-blue-600 transition"
-          >
-            Events
-          </Link>
-
-          {user?.role === "STUDENT" && (
-            <Link
-              to="/student/my-events"
-              className="text-gray-700 hover:text-blue-600 transition"
-            >
-              My Events
-            </Link>
-          )}
-
-          {user?.role === "TEACHER" && (
-            <>
-              <Link
-                to="/teacher"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/teacher/create"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Create Event
-              </Link>
-            </>
-          )}
-
-          {user?.role === "ADMIN" && (
-            <>
-              <Link
-                to="/admin/pending"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Pending
-              </Link>
-              <Link
-                to="/admin/approved"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Approved
-              </Link>
-              <Link
-                to="/admin/rejected"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Rejected
-              </Link>
-            </>
-          )}
-
+        <div className="hidden items-center gap-1 md:flex">
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} className={({ isActive }) => `rounded-xl px-3.5 py-2 text-sm font-medium transition ${isActive ? "bg-slate-100 text-slate-950" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+              {link.label}
+            </NavLink>
+          ))}
           {!user ? (
-            <>
-              <Link
-                to="/login"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl shadow-md transition"
-              >
-                Signup
-              </Link>
-            </>
-          ) : (
-            <ProfileMenu />
-          )}
+            <div className="ml-3 flex items-center gap-2">
+              <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Login</Link>
+              <Link to="/signup" className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">Get started</Link>
+            </div>
+          ) : <div className="ml-3"><ProfileMenu /></div>}
         </div>
+
+        <button aria-label="Toggle menu" onClick={() => setOpen((v) => !v)} className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 md:hidden">
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
 
       {open && (
-        <div className="md:hidden bg-white border-t border-gray-200 px-6 pb-6 space-y-4 text-sm font-medium shadow-md">
-          
-          <Link
-            to="/events"
-            onClick={() => setOpen(false)}
-            className="block text-gray-700 hover:text-blue-600"
-          >
-            Events
-          </Link>
-
-          {user?.role === "STUDENT" && (
-            <Link
-              to="/student/my-events"
-              onClick={() => setOpen(false)}
-              className="block text-gray-700 hover:text-blue-600"
-            >
-              My Events
-            </Link>
-          )}
-
-          {user?.role === "TEACHER" && (
-            <>
-              <Link
-                to="/teacher"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/teacher/create"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Create Event
-              </Link>
-            </>
-          )}
-
-          {user?.role === "ADMIN" && (
-            <>
-              <Link
-                to="/admin/pending"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Pending
-              </Link>
-              <Link
-                to="/admin/approved"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Approved
-              </Link>
-              <Link
-                to="/admin/rejected"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Rejected
-              </Link>
-            </>
-          )}
-
-          {!user ? (
-            <>
-              <Link
-                to="/login"
-                onClick={() => setOpen(false)}
-                className="block text-gray-700 hover:text-blue-600"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setOpen(false)}
-                className="block bg-blue-600 text-white text-center py-2 rounded-xl"
-              >
-                Signup
-              </Link>
-            </>
-          ) : (
-            <ProfileMenu />
-          )}
+        <div className="border-t border-slate-100 bg-white px-4 py-4 shadow-lg md:hidden">
+          <div className="mx-auto max-w-7xl space-y-1">
+            {links.map((link) => (
+              <NavLink key={link.to} to={link.to} onClick={() => setOpen(false)} className={({ isActive }) => `block rounded-xl px-4 py-3 text-sm font-medium ${isActive ? "bg-slate-100 text-slate-950" : "text-slate-600 hover:bg-slate-50"}`}>
+                {link.label}
+              </NavLink>
+            ))}
+            {!user ? (
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <Link to="/login" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 py-2.5 text-center text-sm font-medium text-slate-700">Login</Link>
+                <Link to="/signup" onClick={() => setOpen(false)} className="rounded-xl bg-slate-950 py-2.5 text-center text-sm font-semibold text-white">Get started</Link>
+              </div>
+            ) : <div className="pt-2"><ProfileMenu /></div>}
+          </div>
         </div>
       )}
     </nav>
   );
 }
-
-export default Navbar;
