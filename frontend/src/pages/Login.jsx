@@ -1,119 +1,89 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, LogIn, ShieldCheck, Sparkles } from "lucide-react";
 import { loginUser } from "../store/authSlice";
-import { useNavigate, Link } from "react-router-dom";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
-const Login = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { user, loading, error, token } = useSelector((state) => state.auth);
+const inputClass = "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50";
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    dispatch(loginUser(formData));
-  };
-
-  useEffect(() => {
-    if (user && token) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-
-      if (user.role === "STUDENT") navigate("/student");
-else if (user.role === "TEACHER") navigate("/teacher");
-else if (user.role === "ADMIN") navigate("/admin/pending");
-    }
-  }, [user, token, navigate]);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100 px-4">
-
-      {/* CARD */}
-      <div className="w-full max-w-md backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-3xl p-8">
-
-        {/* HEADER */}
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">
-            Welcome Back 
-          </h2>
-          <p className="text-gray-500 text-sm mt-1">
-            Login to continue to your dashboard
-          </p>
-        </div>
-
-        {/* ERROR */}
-        {error && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg text-center">
-            {error}
-          </div>
-        )}
-
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* EMAIL */}
-          <div>
-            <label className="text-sm text-gray-600">Email</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              onChange={handleChange}
-              required
-              className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div>
-            <label className="text-sm text-gray-600">Password</label>
-            <div className="relative mt-1">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Enter your password"
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
-              />
-              <span
-                className="absolute right-3 top-3 cursor-pointer text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
-              </span>
-            </div>
-          </div>
-
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition duration-300 shadow-md hover:shadow-lg disabled:opacity-60"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        {/* FOOTER */}
-        <p className="text-sm text-center text-gray-500 mt-6">
-          Don’t have an account?{" "}
-          <Link
-            to="/signup"
-            className="text-indigo-600 font-medium hover:underline"
-          >
-            Create one
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
+const getDashboard = (role) => {
+  if (role === "STUDENT") return "/student";
+  if (role === "TEACHER") return "/teacher";
+  return "/admin/pending";
 };
 
-export default Login;
+export default function Login() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, token, loading, error } = useSelector((state) => state.auth);
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "" });
+
+  useEffect(() => {
+    if (user && token) navigate(getDashboard(user.role), { replace: true });
+  }, [user, token, navigate]);
+
+  const updateField = (field) => (event) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    dispatch(loginUser(form));
+  };
+
+  return (
+    <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,.12),transparent_32%),#f8fafc] px-4 py-8 sm:py-12">
+      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,.10)] md:grid-cols-2">
+        <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white md:flex md:flex-col md:justify-between">
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="relative">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/10">
+              <Sparkles size={20} />
+            </div>
+            <p className="mt-8 text-sm font-semibold text-blue-300">CampusConnect</p>
+            <h1 className="mt-2 max-w-sm text-4xl font-black leading-tight tracking-tight">Everything happening on campus, in one place.</h1>
+            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-400">Discover events, manage participation and keep your campus workflow organized.</p>
+          </div>
+          <div className="relative grid grid-cols-2 gap-3 text-xs text-slate-300">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><ShieldCheck size={16} className="text-blue-300" /><p className="mt-3 font-semibold">Role-based access</p></div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4"><LogIn size={16} className="text-blue-300" /><p className="mt-3 font-semibold">Simple workflow</p></div>
+          </div>
+        </section>
+
+        <section className="p-7 sm:p-10">
+          <div className="md:hidden">
+            <p className="text-sm font-bold text-blue-600">CampusConnect</p>
+          </div>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Welcome back</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Sign in to continue to your campus workspace.</p>
+
+          {error && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+
+          <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+            <label className="block text-sm font-semibold text-slate-700">
+              Email
+              <input className={inputClass} type="email" value={form.email} onChange={updateField("email")} placeholder="you@example.com" autoComplete="email" required />
+            </label>
+
+            <label className="block text-sm font-semibold text-slate-700">
+              Password
+              <div className="relative">
+                <input className={`${inputClass} pr-11`} type={showPassword ? "text" : "password"} value={form.password} onChange={updateField("password")} placeholder="Enter your password" autoComplete="current-password" required />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            <button disabled={loading} className="w-full rounded-xl bg-slate-950 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50">
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+
+          <p className="mt-7 text-center text-sm text-slate-500">Don't have an account? <Link to="/signup" className="font-bold text-blue-600 hover:text-blue-700">Create one</Link></p>
+        </section>
+      </div>
+    </main>
+  );
+}

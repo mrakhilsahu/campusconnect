@@ -1,73 +1,134 @@
 import { useEffect, useState } from "react";
-import { getPendingEvents, approveEvent, rejectEvent } from "../../api/events";
+import { Check, CalendarDays, UserRound, X } from "lucide-react";
+import {
+  getPendingEvents,
+  approveEvent,
+  rejectEvent,
+} from "../../api/events";
 
 export default function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getPendingEvents();
-        setEvents(data.events);
-      } catch {
-        setError("Failed to load pending events.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+    getPendingEvents()
+      .then((data) => setEvents(data.events || []))
+      .catch(() => setError("Unable to load pending events."))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleApprove = async (id) => {
+  const action = async (id, type) => {
+    setBusy(id + type);
+
     try {
-      await approveEvent(id);
-      setEvents((prev) => prev.filter((e) => e._id !== id));
+      if (type === "approve") {
+        await approveEvent(id);
+      } else {
+        await rejectEvent(id);
+      }
+
+      setEvents((items) => items.filter((e) => e._id !== id));
     } catch {
-      alert("Failed to approve event.");
+      setError(`Unable to ${type} this event.`);
+    } finally {
+      setBusy("");
     }
   };
 
-  const handleReject = async (id) => {
-    try {
-      await rejectEvent(id);
-      setEvents((prev) => prev.filter((e) => e._id !== id));
-    } catch {
-      alert("Failed to reject event.");
-    }
-  };
+  if (loading) {
+    return (
+      <div className="card animate-pulse p-10 text-center text-sm text-slate-400">
+        Loading pending events...
+      </div>
+    );
+  }
 
-  if (loading) return <p className="text-sm text-gray-500 animate-pulse">Loading...</p>;
-  if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (events.length === 0) return <p className="text-sm text-gray-500">No pending events.</p>;
+  if (error && !events.length) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        {error}
+      </div>
+    );
+  }
+
+  if (!events.length) {
+    return (
+      <div className="card p-12 text-center">
+        <CalendarDays className="mx-auto text-slate-300" size={40} />
+        <p className="mt-4 font-semibold">All caught up</p>
+        <p className="mt-1 text-sm text-slate-400">
+          There are no pending event requests.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      {events.map((event) => (
-        <div key={event._id} className="bg-white border border-gray-200 rounded-xl p-5 flex justify-between items-start gap-4">
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-800">{event.title}</p>
-            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>
-            <p className="text-xs text-gray-400 mt-2">
-              By {event.createdBy?.name} &bull; {new Date(event.date).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => handleApprove(event._id)}
-              className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => handleReject(event._id)}
-              className="px-4 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
-            >
-              Reject
-            </button>
-          </div>
+    <div className="space-y-4">
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
         </div>
+      )}
+
+      {events.map((event) => (
+        <article key={event._id} className="card p-5 sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                Pending review
+              </span>
+
+              <h2 className="mt-4 text-lg font-bold text-slate-900">
+                {event.title}
+              </h2>
+
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
+                {event.description}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <UserRound size={14} />
+                  {event.createdBy?.name || "Unknown teacher"}
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays size={14} />
+                  {new Date(event.date).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 gap-2">
+              <button
+                disabled={!!busy}
+                onClick={() => action(event._id, "reject")}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <X size={16} />
+                Reject
+              </button>
+
+              <button
+                disabled={!!busy}
+                onClick={() => action(event._id, "approve")}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
+              >
+                <Check size={16} />
+                {busy === event._id + "approve"
+                  ? "Approving..."
+                  : "Approve"}
+              </button>
+            </div>
+          </div>
+        </article>
       ))}
     </div>
   );
