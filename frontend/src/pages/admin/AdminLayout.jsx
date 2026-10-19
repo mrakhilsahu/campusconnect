@@ -1,39 +1,55 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 
-function AdminLayout() {
+const tabs = [
+  { name: "Pending", path: "/admin/pending", icon: Clock3 },
+  { name: "Approved", path: "/admin/approved", icon: CheckCircle2 },
+  { name: "Rejected", path: "/admin/rejected", icon: XCircle },
+];
+
+export default function AdminLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <main className="page-shell bg-slate-50/70 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-6xl">
+        <div>
+          <p className="text-sm font-semibold text-blue-600">
+            Administration
+          </p>
 
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Admin Dashboard</h1>
+          <h1 className="mt-1 text-3xl font-black tracking-tight">
+            Event approvals
+          </h1>
 
-        {/* Tabs */}
-        <div className="flex gap-6 border-b mb-8">
-          {[
-            { name: "Pending", path: "/admin/pending" },
-            { name: "Approved", path: "/admin/approved" },
-            { name: "Rejected", path: "/admin/rejected" },
-          ].map((tab) => (
-            <NavLink
-              key={tab.name}
-              to={tab.path}
-              className={({ isActive }) =>
-                `pb-3 text-sm transition ${
-                  isActive
-                    ? "border-b-2 border-blue-600 text-blue-600 font-semibold"
-                    : "text-gray-500 hover:text-gray-700"
-                }`
-              }
-            >
-              {tab.name}
-            </NavLink>
-          ))}
+          <p className="mt-2 text-sm text-slate-500">
+            Review and manage event requests for your college.
+          </p>
         </div>
 
-        <Outlet />
+        <div className="card mt-7 overflow-hidden p-2">
+          <div className="grid grid-cols-3 gap-1">
+            {tabs.map(({ name, path, icon: Icon }) => (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) =>
+                  `flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-slate-950 text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`
+                }
+              >
+                <Icon size={16} />
+                <span className="hidden sm:inline">{name}</span>
+              </NavLink>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
-
-export default AdminLayout;
