@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  MapPin,
+} from "lucide-react";
 import { getApprovedEvents } from "../../api/events";
 import { getMyRegisteredEvents } from "../../api/registrations";
-import { CalendarDays, CheckCircle, Clock, Link } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 export default function StudentDashboard() {
   const { user } = useSelector((state) => state.auth);
@@ -14,108 +20,168 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [allData, myData] = await Promise.all([
-          getApprovedEvents(),
-          getMyRegisteredEvents(),
-        ]);
-        setAllEvents(allData.events);
-        setMyEvents(myData.events);
-      } catch {
-        // silently fail — stats just show 0
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    Promise.all([getApprovedEvents(), getMyRegisteredEvents()])
+      .then(([all, mine]) => {
+        setAllEvents(all.events || []);
+        setMyEvents(mine.events || []);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  // Upcoming = registered events with date in the future
-  const upcoming = myEvents.filter((e) => new Date(e.date) >= new Date());
-  const past = myEvents.filter((e) => new Date(e.date) < new Date());
+  if (loading) {
+    return (
+      <div className="page-shell grid place-items-center">
+        <p className="animate-pulse text-sm text-slate-400">
+          Loading dashboard...
+        </p>
+      </div>
+    );
+  }
+
+  const upcoming = myEvents
+    .filter((event) => new Date(event.date) >= new Date())
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const stats = [
-    { label: "Available Events", value: allEvents.length, icon: <CalendarDays size={20} />, color: "bg-blue-50 text-blue-600" },
-    { label: "Registered", value: myEvents.length, icon: <CheckCircle size={20} />, color: "bg-green-50 text-green-600" },
-    { label: "Upcoming", value: upcoming.length, icon: <Clock size={20} />, color: "bg-yellow-50 text-yellow-600" },
+    ["Available events", allEvents.length, CalendarDays],
+    ["Registered", myEvents.length, CheckCircle2],
+    ["Upcoming", upcoming.length, Clock3],
   ];
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-gray-400 animate-pulse">Loading dashboard...</p>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
+    <main className="page-shell bg-slate-50/70 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-[28px] bg-slate-950 p-7 text-white shadow-xl shadow-slate-900/10 sm:p-9">
+          <p className="text-sm font-medium text-blue-300">
+            Student workspace
+          </p>
 
-        {/* Greeting */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Welcome back, {user?.name?.split(" ")[0]} 👋
+          <h1 className="mt-2 text-3xl font-black tracking-tight">
+            Welcome back, {user?.name?.split(" ")[0]}.
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Here's what's happening on your campus.</p>
+
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
+            Keep track of campus events, your registrations and upcoming
+            activities from one place.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              onClick={() => navigate("/events")}
+              className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"
+            >
+              Browse events
+            </button>
+
+            <button
+              onClick={() => navigate("/student/my-events")}
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white"
+            >
+              My registrations
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {stats.map((stat) => (
-            <div key={stat.label} className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center gap-4">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}>
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {stats.map(([label, value, Icon]) => (
+            <div key={label} className="card p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-3xl font-black text-slate-950">
+                    {value}
+                  </p>
+
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    {label}
+                  </p>
+                </div>
+
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <Icon size={20} />
+                </span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Upcoming registered events */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-800">Upcoming Events</h2>
+        <section className="card mt-5 p-6 sm:p-7">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+                Your schedule
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                Upcoming registrations
+              </h2>
+            </div>
+
             <button
               onClick={() => navigate("/student/my-events")}
-              className="text-sm text-indigo-600 hover:underline"
+              className="hidden items-center gap-1 text-sm font-semibold text-blue-600 sm:flex"
             >
-              View all →
+              View all <ArrowRight size={15} />
             </button>
           </div>
 
           {upcoming.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">No upcoming events.</p>
+            <div className="py-12 text-center">
+              <CalendarDays
+                className="mx-auto text-slate-300"
+                size={36}
+              />
+
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                No upcoming registrations
+              </p>
+
               <button
                 onClick={() => navigate("/events")}
-                className="mt-3 text-sm text-indigo-600 hover:underline"
+                className="mt-2 text-sm font-semibold text-blue-600"
               >
-                Browse events to register →
+                Find an event
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {upcoming.slice(0, 4).map((event) => (
-                <div key={event._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+            <div className="mt-5 space-y-2">
+              {upcoming.slice(0, 5).map((event) => (
+                <div
+                  key={event._id}
+                  className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{event.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    <p className="font-semibold text-slate-800">
+                      {event.title}
                     </p>
+
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays size={13} />
+                        {new Date(event.date).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+
+                      {event.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin size={13} />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
+
+                  <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                     Registered
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
