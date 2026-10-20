@@ -1,136 +1,335 @@
 import { useEffect, useState } from "react";
 import { getMyRegisteredEvents } from "../../api/registrations";
-import { useSelector } from "react-redux";
-import { CalendarDays, MapPin, Download } from "lucide-react";
+import { getMyAttendance } from "../../api/attendance";
+import { getMyCertificate } from "../../api/certificates";
+import {
+  CalendarDays,
+  MapPin,
+  Download,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ShieldCheck,
+  ExternalLink,
+} from "lucide-react";
+
+const escapeHtml = (value = "") =>
+  String(value).replace(/[&<>\"']/g, (character) =>
+    ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    })[character]
+  );
+
+const formatDate = (date) =>
+  new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+const openCertificate = (certificate) => {
+  const verificationUrl = `${window.location.origin}/verify/${encodeURIComponent(certificate.certificateId)}`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>${escapeHtml(certificate.event.title)} - Certificate</title>
+  <style>
+    * { box-sizing: border-box }
+    body { margin: 0; background: #f1f5f9; font-family: Inter, Arial, sans-serif; color: #0f172a; display: grid; place-items: center; min-height: 100vh; padding: 32px }
+    .certificate { width: min(1000px, 100%); background: #fff; padding: 70px 80px; border: 1px solid #cbd5e1; box-shadow: 0 30px 80px rgba(15,23,42,.12); position: relative }
+    .certificate:before { content: ""; position: absolute; inset: 14px; border: 2px solid #dbeafe; pointer-events: none }
+    .brand { text-align: center; color: #2563eb; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; font-size: 12px }
+    .title { text-align: center; font-family: Georgia, serif; font-size: 42px; margin: 20px 0 8px; color: #0f172a }
+    .subtitle { text-align: center; color: #64748b; font-size: 14px }
+    .name { text-align: center; font-family: Georgia, serif; font-size: 46px; font-weight: 700; margin: 38px 0 14px; color: #172554 }
+    .event { text-align: center; font-size: 22px; font-weight: 700; color: #1e3a8a; margin-top: 8px }
+    .date { text-align: center; color: #64748b; margin-top: 8px }
+    .footer { margin-top: 60px; border-top: 1px solid #e2e8f0; padding-top: 18px; display: flex; justify-content: space-between; gap: 24px; font-size: 11px; color: #64748b }
+    .id { font-family: monospace; font-weight: 700; color: #334155 }
+    .verify { word-break: break-all; text-align: right }
+    @media print {
+      body { background: white; padding: 0 }
+      .certificate { box-shadow: none; border: 0; width: 100%; min-height: 100vh }
+      .certificate:before { inset: 8px }
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <div class="brand">CampusConnect</div>
+    <div class="title">Certificate of Participation</div>
+    <div class="subtitle">This is to certify that</div>
+    <div class="name">${escapeHtml(certificate.student.name)}</div>
+    <div class="subtitle">has successfully participated in</div>
+    <div class="event">${escapeHtml(certificate.event.title)}</div>
+    <div class="date">${escapeHtml(formatDate(certificate.event.date))}</div>
+    <div class="footer">
+      <div>
+        <div>Certificate ID</div>
+        <div class="id">${escapeHtml(certificate.certificateId)}</div>
+      </div>
+      <div class="verify">
+        Verify online<br/>
+        ${escapeHtml(verificationUrl)}
+      </div>
+    </div>
+  </div>
+  <script>window.onload=()=>window.print()</script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+
+  if (win) {
+    win.onload = () => setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+};
 
 export default function MyEvents() {
-  const { user } = useSelector((state) => state.auth);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
+  const [certificateLoading, setCertificateLoading] = useState("");
+  const [certificateError, setCertificateError] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await getMyRegisteredEvents();
-        setEvents(data.events);
+        const rawEvents = data.events || [];
+
+        const eventsWithAttendance = await Promise.all(
+          rawEvents.map(async (event) => {
+            try {
+              const att = await getMyAttendance(event._id);
+
+              return {
+                ...event,
+                attendancePresent: att.present,
+              };
+            } catch {
+              return {
+                ...event,
+                attendancePresent: null,
+              };
+            }
+          })
+        );
+
+        setEvents(eventsWithAttendance);
       } catch {
         setError("Failed to load your events.");
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
-  const downloadCertificate = (event) => {
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8"/>
-  <title>Certificate - ${event.title}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Georgia, serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .page { background: white; width: 850px; padding: 70px 80px; border: 6px double #1e3a8a; }
-    .top { text-align: center; margin-bottom: 40px; }
-    .logo { font-size: 14px; color: #6b7280; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
-    .title { font-size: 34px; font-weight: bold; color: #1e3a8a; }
-    .divider { width: 60px; height: 3px; background: #1e3a8a; margin: 16px auto; }
-    .body { text-align: center; }
-    .label { font-size: 15px; color: #6b7280; margin-bottom: 10px; }
-    .name { font-size: 36px; font-weight: bold; color: #1e293b; border-bottom: 2px solid #1e3a8a; display: inline-block; padding-bottom: 6px; margin-bottom: 20px; }
-    .event-label { font-size: 15px; color: #6b7280; }
-    .event-name { font-size: 22px; font-weight: bold; color: #1e3a8a; margin: 8px 0 6px; }
-    .event-date { font-size: 13px; color: #9ca3af; margin-bottom: 50px; }
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
-    .issued { font-size: 12px; color: #9ca3af; }
-    .org { font-size: 14px; font-weight: bold; color: #1e3a8a; }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="top">
-      <div class="logo">CampusConnect</div>
-      <div class="title">Certificate of Participation</div>
-      <div class="divider"></div>
-    </div>
-    <div class="body">
-      <p class="label">This is to certify that</p>
-      <div class="name">${user?.name || "Student"}</div>
-      <p class="event-label">has successfully participated in</p>
-      <div class="event-name">${event.title}</div>
-      <p class="event-date">${new Date(event.date).toDateString()}</p>
-    </div>
-    <div class="footer">
-      <div class="issued">Issued on ${new Date().toDateString()}</div>
-      <div class="org">CampusConnect Platform</div>
-    </div>
-  </div>
-</body>
-</html>`;
+  const downloadCertificate = async (event) => {
+    setCertificateLoading(event._id);
+    setCertificateError("");
 
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (win) win.onload = () => URL.revokeObjectURL(url);
+    try {
+      const data = await getMyCertificate(event._id);
+      openCertificate(data.certificate);
+    } catch (error) {
+      setCertificateError(
+        error.response?.data?.message ||
+          "Unable to generate certificate."
+      );
+    } finally {
+      setCertificateLoading("");
+    }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-gray-500 animate-pulse">Loading your events...</p>
-    </div>
-  );
+  const AttendanceBadge = ({ present }) => {
+    if (present === true) {
+      return (
+        <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+          <CheckCircle size={12} />
+          Present
+        </span>
+      );
+    }
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-red-500">{error}</p>
-    </div>
-  );
+    if (present === false) {
+      return (
+        <span className="flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">
+          <XCircle size={12} />
+          Absent
+        </span>
+      );
+    }
+
+    return (
+      <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
+        <Clock size={12} />
+        Not marked
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="page-shell grid place-items-center">
+        <p className="animate-pulse text-sm text-slate-400">
+          Loading your events...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-shell grid place-items-center px-4">
+        <p className="text-sm text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+    <main className="page-shell bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,.09),_transparent_30%),#f8fafc] px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-blue-600">
+              Your activity
+            </p>
 
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">My Registered Events</h2>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">
+              My events
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Track registrations, attendance and verified participation
+              certificates.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-500 shadow-sm">
+            {events.length} registered event
+            {events.length === 1 ? "" : "s"}
+          </div>
+        </div>
+
+        {certificateError && (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {certificateError}
+          </div>
+        )}
 
         {events.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
-            <p className="text-gray-500">You haven't registered for any events yet.</p>
+          <div className="card mt-8 p-12 text-center">
+            <CalendarDays
+              className="mx-auto text-slate-300"
+              size={40}
+            />
+
+            <p className="mt-4 font-semibold text-slate-700">
+              You haven't registered for any events yet.
+            </p>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Explore the event calendar to find something interesting.
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="mt-8 space-y-4">
             {events.map((event) => (
-              <div
+              <article
                 key={event._id}
-                className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-start justify-between gap-4"
+                className="card card-hover overflow-hidden p-5 sm:p-6"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-800">{event.title}</p>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>
-                  <div className="flex gap-4 mt-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays size={12} /> {new Date(event.date).toLocaleDateString()}
-                    </span>
-                    {event.location && (
-                      <span className="flex items-center gap-1">
-                        <MapPin size={12} /> {event.location}
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                        Registered
                       </span>
+
+                      <AttendanceBadge
+                        present={event.attendancePresent}
+                      />
+                    </div>
+
+                    <h2 className="mt-4 text-xl font-bold text-slate-900">
+                      {event.title}
+                    </h2>
+
+                    <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-slate-500">
+                      {event.description}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <CalendarDays
+                          size={13}
+                          className="text-blue-500"
+                        />
+                        {formatDate(event.date)}
+                      </span>
+
+                      {event.location && (
+                        <span className="flex items-center gap-1.5">
+                          <MapPin
+                            size={13}
+                            className="text-blue-500"
+                          />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 lg:w-64">
+                    {event.attendancePresent === true ? (
+                      <button
+                        disabled={certificateLoading === event._id}
+                        onClick={() => downloadCertificate(event)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-600 disabled:opacity-60"
+                      >
+                        <ShieldCheck size={16} />
+                        {certificateLoading === event._id
+                          ? "Preparing..."
+                          : "Get verified certificate"}
+                      </button>
+                    ) : (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
+                        <div className="flex items-center gap-2 font-bold text-slate-600">
+                          <Download size={14} />
+                          Certificate locked
+                        </div>
+
+                        <p className="mt-1">
+                          Your certificate becomes available after you are
+                          marked present.
+                        </p>
+                      </div>
+                    )}
+
+                    {event.attendancePresent === true && (
+                      <p className="mt-2 flex items-center justify-center gap-1 text-[11px] font-medium text-slate-400">
+                        <ExternalLink size={11} />
+                        Includes online verification ID
+                      </p>
                     )}
                   </div>
                 </div>
-
-                <button
-                  onClick={() => downloadCertificate(event)}
-                  className="shrink-0 flex items-center gap-1.5 text-sm border border-indigo-500 text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 transition"
-                >
-                  <Download size={14} /> Certificate
-                </button>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
