@@ -1,172 +1,229 @@
 import { useState } from "react";
-import { createEvent } from "../../api/events";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, CalendarPlus, MapPin } from "lucide-react";
+import { createEvent } from "../../api/events";
+
+const initial = {
+  title: "",
+  description: "",
+  date: "",
+  time: "",
+  location: "",
+  category: "",
+  capacity: "",
+  mode: "offline",
+};
+
+const inputClass =
+  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50";
 
 export default function CreateEvent() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    location: "",
-    category: "",
-    capacity: "",
-    mode: "offline",
-  });
+
+  const [formData, setFormData] = useState(initial);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const update = (e) =>
+    setFormData((current) => ({
+      ...current,
+      [e.target.name]: e.target.value,
+    }));
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setError("");
+
     try {
       await createEvent(formData);
       navigate("/teacher");
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create event.");
+      setError(
+        err.response?.data?.message || "Unable to create the event."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center px-4 py-10">
-      <div className="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+    <main className="page-shell bg-slate-50/70 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-3xl">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
 
-        <h1 className="text-xl font-semibold text-gray-800 mb-1">Create Event</h1>
-        <p className="text-sm text-gray-500 mb-6">
-          Fill in the details. The event will be sent to admin for approval.
-        </p>
+        <div className="card overflow-hidden">
+          <div className="bg-slate-950 p-7 text-white sm:p-8">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
+              <CalendarPlus size={21} />
+            </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg mb-4">
-            {error}
-          </p>
-        )}
+            <h1 className="mt-5 text-2xl font-black">
+              Create a campus event
+            </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Title</label>
-            <input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              placeholder="e.g. AI Workshop"
-              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-            />
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Add the event details below. New events are sent to an admin
+              for approval.
+            </p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              rows="3"
-              placeholder="Briefly describe the event"
-              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none"
-            />
-          </div>
+          <form onSubmit={submit} className="space-y-5 p-6 sm:p-8">
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Date</label>
+              <label className="text-sm font-semibold text-slate-700">
+                Event title
+              </label>
               <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
+                className={inputClass}
+                name="title"
+                value={formData.title}
+                onChange={update}
                 required
-                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                placeholder="e.g. AI Workshop"
               />
             </div>
+
             <div>
-              <label className="text-sm font-medium text-gray-700">Time</label>
+              <label className="text-sm font-semibold text-slate-700">
+                Description
+              </label>
+              <textarea
+                className={`${inputClass} resize-none`}
+                name="description"
+                value={formData.description}
+                onChange={update}
+                required
+                rows="4"
+                placeholder="What should students know about this event?"
+              />
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-semibold text-slate-700">
+                  Date
+                </label>
+                <input
+                  className={inputClass}
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={update}
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-slate-700">
+                  Time
+                </label>
+                <input
+                  className={inputClass}
+                  type="time"
+                  name="time"
+                  value={formData.time}
+                  onChange={update}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-slate-700">
+                Location / meeting link
+              </label>
+
+              <div className="relative">
+                <MapPin
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={17}
+                />
+                <input
+                  className={`${inputClass} pl-10`}
+                  name="location"
+                  value={formData.location}
+                  onChange={update}
+                  required
+                  placeholder="Room 101 or meeting link"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-semibold text-slate-700">
+                  Category
+                </label>
+                <select
+                  className={inputClass}
+                  name="category"
+                  value={formData.category}
+                  onChange={update}
+                >
+                  <option value="">Select category</option>
+                  <option value="tech">Technical</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="sports">Sports</option>
+                  <option value="workshop">Workshop</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-slate-700">
+                  Mode
+                </label>
+                <select
+                  className={inputClass}
+                  name="mode"
+                  value={formData.mode}
+                  onChange={update}
+                >
+                  <option value="offline">Offline</option>
+                  <option value="online">Online</option>
+                  <option value="hybrid">Hybrid</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-slate-700">
+                Capacity{" "}
+                <span className="font-normal text-slate-400">
+                  (optional)
+                </span>
+              </label>
               <input
-                type="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                className={inputClass}
+                type="number"
+                min="1"
+                name="capacity"
+                value={formData.capacity}
+                onChange={update}
+                placeholder="Leave blank for unlimited"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700">Location / Link</label>
-            <input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              placeholder="Room 101 or Google Meet link"
-              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Category</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                <option value="">Select</option>
-                <option value="tech">Technical</option>
-                <option value="cultural">Cultural</option>
-                <option value="sports">Sports</option>
-                <option value="workshop">Workshop</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Mode</label>
-              <select
-                name="mode"
-                value={formData.mode}
-                onChange={handleChange}
-                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                <option value="offline">Offline</option>
-                <option value="online">Online</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Capacity <span className="text-gray-400">(optional)</span>
-            </label>
-            <input
-              type="number"
-              name="capacity"
-              value={formData.capacity}
-              onChange={handleChange}
-              min="1"
-              placeholder="Leave blank for unlimited"
-              className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-60"
-          >
-            {loading ? "Creating..." : "Create Event"}
-          </button>
-        </form>
+            <button
+              disabled={loading}
+              className="w-full rounded-xl bg-slate-950 py-3 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Creating event..." : "Submit for approval"}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
