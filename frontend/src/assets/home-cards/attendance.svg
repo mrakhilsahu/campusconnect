@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+<defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#10b981"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
+<rect width="900" height="600" fill="url(#g)"/><circle cx="130" cy="130" r="170" fill="#fff" opacity=".1"/><circle cx="760" cy="520" r="210" fill="#fff" opacity=".1"/>
+<rect x="175" y="105" width="550" height="390" rx="34" fill="#fff" opacity=".96"/><rect x="220" y="150" width="460" height="70" rx="18" fill="#ecfdf5"/>
+<circle cx="265" cy="185" r="22" fill="#10b981"/><path d="m254 185 8 8 17-20" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="220" y="255" width="130" height="160" rx="18" fill="#f0fdf4"/><rect x="385" y="255" width="130" height="160" rx="18" fill="#eff6ff"/><rect x="550" y="255" width="130" height="160" rx="18" fill="#fffbeb"/>
+<circle cx="285" cy="330" r="38" fill="#10b981" opacity=".9"/><path d="M267 330l12 12 26-29" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="330" r="38" fill="#3b82f6" opacity=".9"/><circle cx="615" cy="330" r="38" fill="#f59e0b" opacity=".9"/>
+</svg>
